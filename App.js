@@ -115,7 +115,7 @@ const App = () => {
         {loggedIn ? (
           <Stack.Navigator>
             <Stack.Screen
-              name="Road Trip Buddy"
+              name="Jazz"
               component={Tabs}
               options={({ route }) => ({
                 headerTitle: getHeaderTitle(route),

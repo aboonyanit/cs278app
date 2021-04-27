@@ -4,13 +4,13 @@ import * as firebase from "firebase";
 
 // Your web app's Firebase configuration
 var firebaseConfig = {
-  apiKey: "AIzaSyAE0XqY7UIt84jbvDgwR_bWWkRy4k-X1EM",
-  authDomain: "cs-210-project.firebaseapp.com",
-  projectId: "cs-210-project",
-  storageBucket: "cs-210-project.appspot.com",
-  messagingSenderId: "263845644775",
-  appId: "1:263845644775:web:608290748a570d669d1542",
-  measurementId: "G-FSFDGW8XDY",
+  apiKey: "AIzaSyBKpw-6j_iCfLZ-ri-kiqkyyWpWMJpq06g",
+  authDomain: "cs278-app.firebaseapp.com",
+  projectId: "cs278-app",
+  storageBucket: "cs278-app.appspot.com",
+  messagingSenderId: "239119134291",
+  appId: "1:239119134291:web:04ce349495fa625e6f20a6",
+  measurementId: "G-H6MMJ2TDNW"
 };
 
 // Initialize Firebase
