@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import React, { useState } from "react";
-import { findRegion, tripViewComponent } from "./TripViewer";
 
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import db from "../firebase";
@@ -79,9 +78,6 @@ export default function Profile({ navigation }) {
         <View style={styles.cardHeader}>
           <Text style={styles.tripName}>{item.tripTitle}</Text>
           <Text>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
-        </View>
-        <View style={styles.tripCard}>
-          {tripViewComponent(item.pins, findRegion(item.pins, item.coordinates), item.coordinates)}
         </View>
       </TouchableOpacity>
     );

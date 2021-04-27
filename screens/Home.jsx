@@ -12,7 +12,6 @@ import React, { useEffect, useState } from "react";
 import * as firebase from "firebase";
 import db from "../firebase";
 import moment from "moment";
-import { findRegion, tripViewComponent } from "./TripViewer";
 
 export default function Home({ navigation }) {
   const [feedItems, setFeedItems] = useState(["asdasd"]);
@@ -87,9 +86,6 @@ export default function Home({ navigation }) {
             <Text>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
           </View>
           <Text>by {item.usersName}</Text>
-        </View>
-        <View style={styles.tripCard}>
-          {tripViewComponent(item.pins, findRegion(item.pins, item.coordinates), item.coordinates)}
         </View>
       </TouchableOpacity>
     );

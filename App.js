@@ -10,14 +10,10 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import Home from "./screens/Home";
 import Profile from "./screens/Profile";
-import TripMap from "./screens/TripMap";
-import TripOverview from "./screens/TripOverview";
-import TripViewer from "./screens/TripViewer";
 import Login from "./screens/Login";
 import Signup from "./screens/Signup";
 import Search from "./screens/Search";
 import Settings from "./screens/Settings";
-import PastTripOverview from "./screens/PastTripOverview";
 import { MenuProvider } from "react-native-popup-menu";
 import FriendProfile from "./screens/FriendProfile";
 
@@ -37,8 +33,6 @@ function getHeaderTitle(route) {
       return "Home";
     case "Search":
       return "Search";
-    case "Record Trip":
-      return "Record Trip";
     case "Profile":
       return "Profile";
   }
@@ -68,20 +62,6 @@ function Tabs() {
           tabBarLabel: "Search",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="magnify" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Record Trip"
-        component={TripMap}
-        options={{
-          tabBarLabel: "Record Trip",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="circle-slice-8"
-              color={color}
-              size={size}
-            />
           ),
         }}
       />
@@ -141,12 +121,8 @@ const App = () => {
                 headerTitle: getHeaderTitle(route),
               })}
             />
-            <Stack.Screen name="Trip Map" component={TripMap} />
             <Stack.Screen name="Profile" component={Profile} />
-            <Stack.Screen name="Trip Overview" component={TripOverview} />
-            <Stack.Screen name="Trip Viewer" component={TripViewer} />
             <Stack.Screen name="Settings" component={Settings} />
-            <Stack.Screen name="Past Trip" component={PastTripOverview} />
             <Stack.Screen name="Friend Profile" component={FriendProfile} />
           </Stack.Navigator>
         ) : (

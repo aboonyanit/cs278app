@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import React, { useState } from "react";
-import { findRegion, tripViewComponent } from "./TripViewer";
 
 import db from "../firebase";
 import moment from "moment";
