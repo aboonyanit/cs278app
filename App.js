@@ -14,6 +14,7 @@ import Login from "./screens/Login";
 import Signup from "./screens/Signup";
 import Search from "./screens/Search";
 import Settings from "./screens/Settings";
+import Post from "./screens/Post";
 import { MenuProvider } from "react-native-popup-menu";
 import FriendProfile from "./screens/FriendProfile";
 
@@ -33,6 +34,8 @@ function getHeaderTitle(route) {
       return "Home";
     case "Search":
       return "Search";
+    case "Post":
+      return "Post";
     case "Profile":
       return "Profile";
   }
@@ -62,6 +65,20 @@ function Tabs() {
           tabBarLabel: "Search",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="magnify" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Post"
+        component={Post}
+        options={{
+          tabBarLabel: "Post",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="note-plus"
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
