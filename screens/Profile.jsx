@@ -99,9 +99,10 @@ export default function Profile({ navigation }) {
         // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
+        <Text style={styles.time}>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
         <View style={styles.cardHeader}>
           <Text style={styles.postText}>{item.post}</Text>
-          <Text>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
+
         </View>
         <View style={styles.likes}>
           {item.likes == null && <Text> {item.likes} 0 likes </Text>}
@@ -297,11 +298,15 @@ const styles = StyleSheet.create({
     shadowColor: "#333",
     shadowOpacity: 0.3,
     paddingHorizontal: 12,
+    paddingVertical: 10,
     marginVertical: 10,
   },
   postText: {
     fontSize: 20,
     fontWeight: "bold",
+  },
+  time: {
+    fontSize: 12,
   },
   tripCard: {
     width: Dimensions.get("window").width,
