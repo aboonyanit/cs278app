@@ -4,6 +4,8 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  Image,
+  Modal,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -13,6 +15,7 @@ import {
 import React, { useState } from "react";
 
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { TextInput } from "react-native-gesture-handler";
 import db from "../firebase";
 import moment from "moment";
 import { useFocusEffect } from "@react-navigation/native";
@@ -25,6 +28,8 @@ import { useFocusEffect } from "@react-navigation/native";
  */
 export default function Profile({ navigation }) {
   const [loading, setLoading] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
+  const [currBio, setCurrBio] = useState("");
   const [pastTrips, setPastTrips] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
@@ -64,6 +69,7 @@ export default function Profile({ navigation }) {
     let uid = firebase.auth().currentUser.uid;
     const usersRef = firebase.firestore().collection("users");
     usersRef.doc(uid).onSnapshot((userDoc) => {
+      setCurrBio(userDoc.data()["bio"]);
       setFollowers(userDoc.data()["followers"]);
       setFollowing(userDoc.data()["following"]);
     });
@@ -84,9 +90,24 @@ export default function Profile({ navigation }) {
   };
 
   const noTripsComponent = () => {
-    return (
-      <Text style={styles.noTripText}>No trips to display!</Text>
-    );
+    return <Text style={styles.noTripText}>No trips to display!</Text>;
+  };
+
+  const onSave = () => {
+    const user = firebase.auth().currentUser;
+    db.collection("users")
+      .doc(user.uid)
+      .update({
+        bio: currBio,
+      })
+      .then(() => {
+        console.log("Bio successfully edited!");
+        setEditingBio(false);
+      })
+      .catch((error) => {
+        console.error("Error writing document: ", error);
+        setEditingBio(false);
+      });
   };
 
   return (
@@ -107,12 +128,52 @@ export default function Profile({ navigation }) {
         <Text style={styles.follow}>{followers.length} Followers</Text>
         <Text style={styles.follow}>{following.length} Following</Text>
       </View>
+      <View style={styles.bio}>
+        {editingBio && (
+          <Modal
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setEditingBio(false)}
+          >
+            <View style={styles.centeredView}>
+              <View style={styles.modalView}>
+                <TouchableOpacity onPress={() => setEditingBio(false)}>
+                  <Image
+                    source={require("../assets/close-button.png")}
+                    style={styles.exit}
+                  />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.bioText}
+                  defaultValue={currBio}
+                  onChangeText={setCurrBio}
+                  multiline={true}
+                />
+                <TouchableOpacity
+                  onPress={onSave}
+                  style={styles.appButtonContainer}
+                >
+                  <Text style={styles.appButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        )}
+        <Text style={styles.bioText}>{currBio}</Text>
+        <MaterialCommunityIcons
+          style={styles.icon}
+          name="account-edit-outline"
+          color={"#808080"}
+          size={30}
+          onPress={() => setEditingBio(true)}
+        />
+      </View>
       <Text style={styles.header}>My Past Trips</Text>
       {loading ? (
         <ActivityIndicator />
       ) : (
-        <FlatList 
-          data={pastTrips} 
+        <FlatList
+          data={pastTrips}
           renderItem={pastTripComponent}
           ListEmptyComponent={noTripsComponent}
         />
@@ -122,6 +183,30 @@ export default function Profile({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    margin: 20,
+  },
+  modalView: {
+    width: 350,
+    height: 500,
+    padding: 20,
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -129,7 +214,20 @@ const styles = StyleSheet.create({
   },
   spaceBetweenRow: {
     flexDirection: "row",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+  },
+  appButtonContainer: {
+    backgroundColor: "#00A398",
+    borderRadius: 30,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  appButtonText: {
+    fontSize: 18,
+    color: "#fff",
+    fontWeight: "bold",
+    alignSelf: "center",
+    textTransform: "uppercase",
   },
   row: {
     flexDirection: "row",
@@ -149,6 +247,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "bold",
     margin: 15,
+  },
+  bio: {
+    margin: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  bioText: {
+    fontSize: 20,
+    width: 200,
   },
   header: {
     fontSize: 24,
@@ -184,5 +292,11 @@ const styles = StyleSheet.create({
   noTripText: {
     fontSize: 15,
     alignSelf: "center",
+  },
+  exit: {
+    width: 30,
+    height: 30,
+    marginLeft: 250,
+    marginBottom: 20,
   },
 });
