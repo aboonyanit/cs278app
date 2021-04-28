@@ -69,7 +69,7 @@ export default function Profile({ navigation }) {
     let uid = firebase.auth().currentUser.uid;
     const usersRef = firebase.firestore().collection("users");
     usersRef.doc(uid).onSnapshot((userDoc) => {
-      setCurrBio(userDoc.data()["bio"] ?? "");
+      setCurrBio(userDoc.data()["bio"] ?? "Hi there!");
       setFollowers(userDoc.data()["followers"]);
       setFollowing(userDoc.data()["following"]);
     });
