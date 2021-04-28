@@ -30,37 +30,36 @@ export default function Profile({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
   const [currBio, setCurrBio] = useState("");
-  const [pastTrips, setPastTrips] = useState([]);
+  const [pastPosts, setPastPosts] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
 
-  const parseTripsFromDatabase = (tripsFromDatabase) => {
-    const parsedTrips = [];
+  const parsePostsFromDatabase = (postsFromDatabase) => {
+    const parsedPosts = [];
     const user = firebase.auth().currentUser;
-    tripsFromDatabase.forEach((trip) => {
-      const tripData = trip.data();
-      if (tripData.uid == user.uid) {
-        tripData["id"] = trip.id;
-        tripData["tripTitle"] = tripData.tripTitleText;
-        parsedTrips.push(tripData);
+    postsFromDatabase.forEach((post) => {
+      const postData = post.data();
+      if (postData.uid == user.uid) {
+        postData["id"] = post.id;
+        parsedPosts.push(postData);
       }
     });
-    return parsedTrips;
+    return parsedPosts;
   };
 
-  const loadPastTrips = async () => {
+  const loadPastPosts = async () => {
     setLoading(true);
-    setPastTrips([]);
-    const collRef = db.collection("trips");
+    setPastPosts([]);
+    const collRef = db.collection("posts");
     const tripsFromDatabase = await collRef.orderBy("time", "desc").get();
-    const parsedTrips = parseTripsFromDatabase(tripsFromDatabase);
-    setPastTrips(parsedTrips);
+    const parsedPosts = parsePostsFromDatabase(tripsFromDatabase);
+    setPastPosts(parsedPosts);
     setLoading(false);
   };
 
   useFocusEffect(
     React.useCallback(() => {
-      loadPastTrips();
+      loadPastPosts();
       getCurrentUser();
     }, [])
   );
@@ -75,22 +74,45 @@ export default function Profile({ navigation }) {
     });
   };
 
-  const pastTripComponent = ({ item }) => {
+  const onPressFollowers = () => {
+    const data = {
+      email: firebase.auth().currentUser.email,
+      follow: followers,
+      isFollowers: true,
+    };
+    navigation.navigate("Follow", data);
+  };
+
+  const onPressFollowing = () => {
+    const data = {
+      email: firebase.auth().currentUser.email,
+      follow: following,
+      isFollowers: false,
+    };
+    navigation.navigate("Follow", data);
+  };
+
+
+  const pastPostComponent = ({ item }) => {
     return (
       <TouchableOpacity
-        onPress={() => navigation.navigate("Past Trip", item)}
+        // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.tripName}>{item.tripTitle}</Text>
+          <Text style={styles.postText}>{item.post}</Text>
           <Text>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
+        </View>
+        <View style={styles.likes}>
+          {item.likes == null && <Text> {item.likes} 0 likes </Text>}
+          {item.likes != null && <Text> {item.likes.length} likes </Text>}
         </View>
       </TouchableOpacity>
     );
   };
 
-  const noTripsComponent = () => {
-    return <Text style={styles.noTripText}>No trips to display!</Text>;
+  const noPostsComponent = () => {
+    return <Text style={styles.noTripText}>No posts to display!</Text>;
   };
 
   const onSave = () => {
@@ -125,8 +147,12 @@ export default function Profile({ navigation }) {
         />
       </View>
       <View style={styles.row}>
-        <Text style={styles.follow}>{followers.length} Followers</Text>
-        <Text style={styles.follow}>{following.length} Following</Text>
+        <TouchableOpacity onPress={onPressFollowers}>
+          <Text style={styles.follow}>{followers.length} Followers</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onPressFollowing}>
+          <Text style={styles.follow}>{following.length} Following</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.bio}>
         {editingBio && (
@@ -168,14 +194,14 @@ export default function Profile({ navigation }) {
           onPress={() => setEditingBio(true)}
         />
       </View>
-      <Text style={styles.header}>My Past Trips</Text>
+      <Text style={styles.header}>My Posts</Text>
       {loading ? (
         <ActivityIndicator />
       ) : (
         <FlatList
-          data={pastTrips}
-          renderItem={pastTripComponent}
-          ListEmptyComponent={noTripsComponent}
+          data={pastPosts}
+          renderItem={pastPostComponent}
+          ListEmptyComponent={noPostsComponent}
         />
       )}
     </SafeAreaView>
@@ -273,7 +299,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginVertical: 10,
   },
-  tripName: {
+  postText: {
     fontSize: 20,
     fontWeight: "bold",
   },
