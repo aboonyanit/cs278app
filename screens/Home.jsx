@@ -16,42 +16,41 @@ import moment from "moment";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 export default function Home({ navigation }) {
-  const [feedItems, setFeedItems] = useState(["asdasd"]);
+  const [postItems, setPostItems] = useState(["asdasd"]);
   const [isLoading, setIsLoading] = useState(true);
   const [likesUsers, setLikesUsers] = useState({});
   const myUid = firebase.auth().currentUser.uid;
 
   useEffect(() => {
-    loadFeedTrips();
+    loadFeedPosts();
   }, []);
 
-  const loadFeedTrips = async () => {
+  const loadFeedPosts = async () => {
     setIsLoading(true);
-    setFeedItems([]);
-    const feedTrips = await parseTripsForFeed();
-    setFeedItems(feedTrips);
+    setPostItems([]);
+    const feedPosts = await parseTripsForFeed();
+    setPostItems(feedPosts);
     setIsLoading(false);
   };
 
   const parseTripsForFeed = async () => {
-    const parsedTrips = [];
+    const parsedPosts = [];
     const followedUserIds = await fetchMyFollowing();
-    const tripsFromDatabase = await fetchUsersTrips(followedUserIds);
+    const postsFromDatabase = await fetchUsersPosts(followedUserIds);
     const userIdToNameMap = await fetchUsersNames(followedUserIds);
     const likeUserDict = {};
-    for (let tripBatch of tripsFromDatabase) {
-      tripBatch.forEach((trip) => {
-        const tripData = trip.data();
-        const usersId = tripData["uid"];
-        tripData["usersName"] = userIdToNameMap[usersId];
-        tripData["id"] = trip.id;
-        tripData["tripTitle"] = tripData.tripTitleText;
-        likeUserDict[trip.id] = tripData.likes;
-        parsedTrips.push(tripData);
+    for (let postBatch of postsFromDatabase) {
+      postBatch.forEach((post) => {
+        const postData = post.data();
+        const usersId = postData["uid"];
+        postData["usersName"] = userIdToNameMap[usersId];
+        postData["id"] = post.id;
+        likeUserDict[post.id] = postData.likes;
+        parsedPosts.push(postData);
       });
     }
     setLikesUsers(likeUserDict);
-    return parsedTrips;
+    return parsedPosts;
   };
 
   const fetchMyFollowing = async () => {
@@ -62,20 +61,20 @@ export default function Home({ navigation }) {
     return followedUserIds;
   };
 
-  const fetchUsersTrips = async (userIds) => {
-    const trips = [];
+  const fetchUsersPosts = async (userIds) => {
+    const posts = [];
     for (let i = 0; i < userIds.length; i += 10) {
       // Firestore limits "in" queries to 10 elements
       // so we must batch these queries
       const batchIds = userIds.slice(i, i + 10);
       const batchTrips = await db
-        .collection("trips")
+        .collection("posts")
         .where("uid", "in", batchIds)
         .orderBy("time", "desc")
         .get();
-      trips.push(batchTrips);
+        posts.push(batchTrips);
     }
-    return trips;
+    return posts;
   };
 
   const fetchUsersNames = async (userIds) => {
@@ -105,9 +104,9 @@ export default function Home({ navigation }) {
   const onUserLike = async (item) => {
     if (item.likes != null && item.uid != myUid) {
       // Check to make sure it's not your own post
-      const tripRef = await db.collection("trips").doc(item.id);
+      const postRef = await db.collection("posts").doc(item.id);
       if (item.likes.includes(myUid)) {
-        tripRef.update({
+        postRef.update({
           likes: firebase.firestore.FieldValue.arrayRemove(myUid)
         });
         const index = item.likes.indexOf(myUid);
@@ -116,7 +115,7 @@ export default function Home({ navigation }) {
         }
       } else {
         item.likes.push(myUid);
-        tripRef.update({
+        postRef.update({
           likes: firebase.firestore.FieldValue.arrayUnion(myUid)
       });
       }
@@ -126,58 +125,58 @@ export default function Home({ navigation }) {
     }
   }
 
-  const pastTripComponent = ({ item }) => {
+  const pastPostComponent = ({ item }) => {
     return (
-      <View>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Past Trip", item)}
-          style={styles.itemContainer}
-        >
-          <View style={styles.cardHeader}>
-            <View style={styles.row}>
-              <Text style={styles.tripName}>{item.tripTitle}</Text>
-              <Text>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
-            </View>
-            <Text>by {item.usersName}</Text>
-          </View>
-          <View style={styles.tripCard}>
-            {tripViewComponent(
-              item.pins,
-              findRegion(item.pins, item.coordinates),
-              item.coordinates
-            )}
-          </View>
-          <View>
-            {item.likes == null && <Text> {item.likes} 0 likes </Text>}
-            {item.likes != null && <Text> {item.likes.length} likes </Text>}
-          </View>
-          <View
+      <TouchableOpacity
+        // onPress={() => navigation.navigate("Past Trip", item)}
+        style={styles.itemContainer}
+      >
+        <Text>By: {item.usersName}</Text>
+        <Text style={styles.time}>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
+        <View style={styles.cardHeader}>
+          <Text style={styles.postText}>{item.post}</Text>
+
+        </View>
+        <View style={styles.likes}>
+          {item.likes == null && <Text> {item.likes} 0 likes </Text>}
+          {item.likes != null && <Text> {item.likes.length} likes </Text>}
+        </View>
+        <View
             style={{
               paddingTop: 10,
               borderBottomColor: "lightgray",
               borderBottomWidth: 1,
             }}
           />
-          {item.likes != null && item.likes.includes(myUid) && <MaterialCommunityIcons
-            style={styles.icon}
-            name="thumb-up-outline"
-            color={"#00A398"}
-            size={25}
-            onPress={() => onUserLike(item)}
-          />}
-          {item.likes != null && !item.likes.includes(myUid) && <MaterialCommunityIcons
-            style={styles.icon}
-            name="thumb-up-outline"
-            color={"#808080"}
-            size={25}
-            onPress={() => onUserLike(item)}
-          />}
+          {item.likes != null && item.likes.includes(myUid) && (
+            <TouchableOpacity onPress={() => onUserLike(item)}>
+              <View>
+                <MaterialCommunityIcons
+                  style={styles.icon}
+                  name="thumb-up-outline"
+                  color={"#00A398"}
+                  size={25}
+                />
+              </View>
+            </TouchableOpacity>
+          )}
+          {item.likes != null && !item.likes.includes(myUid) && (
+            <TouchableOpacity onPress={() => onUserLike(item)}>
+              <View>
+                <MaterialCommunityIcons
+                  style={styles.icon}
+                  name="thumb-up-outline"
+                  color={"#808080"}
+                  size={25}
+                />
+              </View>
+            </TouchableOpacity>
+          )}
         </TouchableOpacity>
-      </View>
     );
   };
 
-  const noTripsComponent = () => {
+  const noPostsComponent = () => {
     return (
       <Text style={styles.noTripText}>
         <Text>Your feed is currently empty!{"\n"}</Text>
@@ -188,19 +187,18 @@ export default function Home({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Road Trip Buddy</Text>
       {isLoading ? (
         <ActivityIndicator />
       ) : (
-        <FlatList
-          data={feedItems}
-          renderItem={pastTripComponent}
-          ListEmptyComponent={noTripsComponent}
-          refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={loadFeedTrips} />
-          }
-        />
-      )}
+          <FlatList
+            data={postItems}
+            renderItem={pastPostComponent}
+            ListEmptyComponent={noPostsComponent}
+            refreshControl={
+              <RefreshControl refreshing={isLoading} onRefresh={loadFeedPosts} />
+            }
+          />
+        )}
     </SafeAreaView>
   );
 }
@@ -217,6 +215,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     alignSelf: "center",
     marginVertical: 5,
+  },
+  postText: {
+    fontSize: 20,
+  },
+  time: {
+    color: "#A9A9A9",
+    paddingLeft: 4,
   },
   itemContainer: {
     borderRadius: 6,

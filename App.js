@@ -16,6 +16,7 @@ import Search from "./screens/Search";
 import Settings from "./screens/Settings";
 import Post from "./screens/Post";
 import Follow from "./screens/Follow";
+import Notifications from "./screens/Notifications";
 
 import { MenuProvider } from "react-native-popup-menu";
 import FriendProfile from "./screens/FriendProfile";
@@ -29,7 +30,7 @@ function getHeaderTitle(route) {
   // If the focused route is not found, we need to assume it's the initial screen
   // This can happen during if there hasn't been any navigation inside the screen
   // In our case, it's "Feed" as that's the first screen inside the navigator
-  const routeName = getFocusedRouteNameFromRoute(route) ?? "Road Trip Buddy";
+  const routeName = getFocusedRouteNameFromRoute(route) ?? "Jazz Finder";
 
   switch (routeName) {
     case "Home":
@@ -38,6 +39,8 @@ function getHeaderTitle(route) {
       return "Search";
     case "Post":
       return "Post";
+    case "Notifications":
+        return "Notifications";
     case "Profile":
       return "Profile";
   }
@@ -78,6 +81,20 @@ function Tabs() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="note-plus"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Notifications"
+        component={Notifications}
+        options={{
+          tabBarLabel: "Notifications",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="bell"
               color={color}
               size={size}
             />
@@ -134,7 +151,7 @@ const App = () => {
         {loggedIn ? (
           <Stack.Navigator>
             <Stack.Screen
-              name="Jazz"
+              name="Feed"
               component={Tabs}
               options={({ route }) => ({
                 headerTitle: getHeaderTitle(route),

@@ -23,6 +23,7 @@ export default function Post({ navigation }) {
       post: text,
       time: new Date().toISOString(),
       uid: user.uid,
+      likes: []
     };
     db.collection("posts")
       .add(post)
@@ -107,7 +108,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    marginBottom: 20,
+    marginBottom: 30,
     marginHorizontal: 15,
     width: "20%",
     marginLeft: 15,

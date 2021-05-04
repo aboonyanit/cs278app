@@ -96,7 +96,6 @@ export default function Profile({ navigation }) {
   const pastPostComponent = ({ item }) => {
     return (
       <TouchableOpacity
-        // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
         <Text style={styles.time}>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
