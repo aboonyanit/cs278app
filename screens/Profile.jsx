@@ -5,6 +5,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Keyboard,
   Modal,
   SafeAreaView,
   StyleSheet,
@@ -30,6 +31,7 @@ export default function Profile({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
   const [currBio, setCurrBio] = useState("");
+  const [editingBioText, setEditingBioText] = useState("");
   const [pastPosts, setPastPosts] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
@@ -92,16 +94,16 @@ export default function Profile({ navigation }) {
     navigation.navigate("Follow", data);
   };
 
-
   const pastPostComponent = ({ item }) => {
     return (
       <TouchableOpacity
         style={styles.itemContainer}
       >
-        <Text style={styles.time}>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
+        <Text style={styles.time}>
+          {moment(item.time, moment.ISO_8601).format("LLL")}
+        </Text>
         <View style={styles.cardHeader}>
           <Text style={styles.postText}>{item.post}</Text>
-
         </View>
         <View style={styles.likes}>
           {item.likes == null && <Text> {item.likes} 0 likes </Text>}
@@ -120,7 +122,7 @@ export default function Profile({ navigation }) {
     db.collection("users")
       .doc(user.uid)
       .update({
-        bio: currBio,
+        bio: editingBioText,
       })
       .then(() => {
         console.log("Bio successfully edited!");
@@ -130,6 +132,7 @@ export default function Profile({ navigation }) {
         console.error("Error writing document: ", error);
         setEditingBio(false);
       });
+    setCurrBio(editingBioText);
   };
 
   return (
@@ -172,8 +175,13 @@ export default function Profile({ navigation }) {
                 <TextInput
                   style={styles.bioText}
                   defaultValue={currBio}
-                  onChangeText={setCurrBio}
+                  onChangeText={setEditingBioText}
                   multiline={true}
+                  returnKeyType="done"
+                  onSubmitEditing={() => {
+                    Keyboard.dismiss();
+                  }}
+                  blurOnSubmit={true}
                 />
                 <TouchableOpacity
                   onPress={onSave}
