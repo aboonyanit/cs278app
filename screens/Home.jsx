@@ -1,19 +1,93 @@
+import * as firebase from "firebase";
+
 import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
-  FlatList,
   TouchableOpacity,
-  Dimensions,
-  ActivityIndicator,
-  SafeAreaView,
-  RefreshControl,
+  View,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import * as firebase from "firebase";
+
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import db from "../firebase";
 import moment from "moment";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+
+export const pastPostComponent = ({ item }) => {
+  const myUid = firebase.auth().currentUser.uid;
+
+  return (
+    <TouchableOpacity
+      // onPress={() => navigation.navigate("Past Trip", item)}
+      style={styles.itemContainer}
+    >
+      <Text>By: {item.usersName}</Text>
+
+      <Text style={styles.time}>
+        {moment(item.time, moment.ISO_8601).format("LLL")}
+      </Text>
+      <View style={styles.cardHeader}>
+        <Text style={styles.postText}>{item.post}</Text>
+      </View>
+      <ScrollView horizontal={true}>
+        {item.images &&
+          item.images.map((photo, i) => (
+            <Image
+              key={i}
+              source={{ uri: photo }}
+              style={{
+                width: Dimensions.get("window").height * 0.23,
+                height: Dimensions.get("window").height * 0.23,
+                margin: 5,
+                padding: 5,
+              }}
+            />
+          ))}
+      </ScrollView>
+      <View style={styles.likes}>
+        {item.likes == null && <Text> {item.likes} 0 likes </Text>}
+        {item.likes != null && <Text> {item.likes.length} likes </Text>}
+      </View>
+      <View
+        style={{
+          paddingTop: 10,
+          borderBottomColor: "lightgray",
+          borderBottomWidth: 1,
+        }}
+      />
+      {item.likes != null && item.likes.includes(myUid) && (
+        <TouchableOpacity onPress={() => onUserLike(item)}>
+          <View>
+            <MaterialCommunityIcons
+              style={styles.icon}
+              name="thumb-up-outline"
+              color={"#00A398"}
+              size={25}
+            />
+          </View>
+        </TouchableOpacity>
+      )}
+      {item.likes != null && !item.likes.includes(myUid) && (
+        <TouchableOpacity onPress={() => onUserLike(item)}>
+          <View>
+            <MaterialCommunityIcons
+              style={styles.icon}
+              name="thumb-up-outline"
+              color={"#808080"}
+              size={25}
+            />
+          </View>
+        </TouchableOpacity>
+      )}
+    </TouchableOpacity>
+  );
+};
 
 export default function Home({ navigation }) {
   const [postItems, setPostItems] = useState(["asdasd"]);
@@ -72,7 +146,7 @@ export default function Home({ navigation }) {
         .where("uid", "in", batchIds)
         .orderBy("time", "desc")
         .get();
-        posts.push(batchTrips);
+      posts.push(batchTrips);
     }
     return posts;
   };
@@ -107,7 +181,7 @@ export default function Home({ navigation }) {
       const postRef = await db.collection("posts").doc(item.id);
       if (item.likes.includes(myUid)) {
         postRef.update({
-          likes: firebase.firestore.FieldValue.arrayRemove(myUid)
+          likes: firebase.firestore.FieldValue.arrayRemove(myUid),
         });
         const index = item.likes.indexOf(myUid);
         if (index > -1) {
@@ -116,64 +190,13 @@ export default function Home({ navigation }) {
       } else {
         item.likes.push(myUid);
         postRef.update({
-          likes: firebase.firestore.FieldValue.arrayUnion(myUid)
-      });
+          likes: firebase.firestore.FieldValue.arrayUnion(myUid),
+        });
       }
       const newLikesUsers = { ...likesUsers, [item.id]: item.likes };
-      setLikesUsers(newLikesUsers); 
+      setLikesUsers(newLikesUsers);
       // There is probably a way around likesUsers - used this to get rereneder to occur
     }
-  }
-
-  const pastPostComponent = ({ item }) => {
-    return (
-      <TouchableOpacity
-        // onPress={() => navigation.navigate("Past Trip", item)}
-        style={styles.itemContainer}
-      >
-        <Text>By: {item.usersName}</Text>
-        <Text style={styles.time}>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
-        <View style={styles.cardHeader}>
-          <Text style={styles.postText}>{item.post}</Text>
-
-        </View>
-        <View style={styles.likes}>
-          {item.likes == null && <Text> {item.likes} 0 likes </Text>}
-          {item.likes != null && <Text> {item.likes.length} likes </Text>}
-        </View>
-        <View
-            style={{
-              paddingTop: 10,
-              borderBottomColor: "lightgray",
-              borderBottomWidth: 1,
-            }}
-          />
-          {item.likes != null && item.likes.includes(myUid) && (
-            <TouchableOpacity onPress={() => onUserLike(item)}>
-              <View>
-                <MaterialCommunityIcons
-                  style={styles.icon}
-                  name="thumb-up-outline"
-                  color={"#00A398"}
-                  size={25}
-                />
-              </View>
-            </TouchableOpacity>
-          )}
-          {item.likes != null && !item.likes.includes(myUid) && (
-            <TouchableOpacity onPress={() => onUserLike(item)}>
-              <View>
-                <MaterialCommunityIcons
-                  style={styles.icon}
-                  name="thumb-up-outline"
-                  color={"#808080"}
-                  size={25}
-                />
-              </View>
-            </TouchableOpacity>
-          )}
-        </TouchableOpacity>
-    );
   };
 
   const noPostsComponent = () => {
@@ -190,15 +213,15 @@ export default function Home({ navigation }) {
       {isLoading ? (
         <ActivityIndicator />
       ) : (
-          <FlatList
-            data={postItems}
-            renderItem={pastPostComponent}
-            ListEmptyComponent={noPostsComponent}
-            refreshControl={
-              <RefreshControl refreshing={isLoading} onRefresh={loadFeedPosts} />
-            }
-          />
-        )}
+        <FlatList
+          data={postItems}
+          renderItem={pastPostComponent}
+          ListEmptyComponent={noPostsComponent}
+          refreshControl={
+            <RefreshControl refreshing={isLoading} onRefresh={loadFeedPosts} />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }

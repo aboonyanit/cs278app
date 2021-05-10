@@ -8,7 +8,6 @@ import {
   Keyboard,
   Modal,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -19,7 +18,7 @@ import React, { useState } from "react";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { TextInput } from "react-native-gesture-handler";
 import db from "../firebase";
-import moment from "moment";
+import { pastPostComponent } from "./Home";
 import { useFocusEffect } from "@react-navigation/native";
 
 /**
@@ -93,42 +92,6 @@ export default function Profile({ navigation }) {
       isFollowers: false,
     };
     navigation.navigate("Follow", data);
-  };
-
-  const pastPostComponent = ({ item }) => {
-    // console.log(item);
-    return (
-      <View
-        // onPress={() => navigation.navigate("Past Trip", item)}
-        style={styles.itemContainer}
-      >
-        <Text style={styles.time}>
-          {moment(item.time, moment.ISO_8601).format("LLL")}
-        </Text>
-        <View style={styles.cardHeader}>
-          <Text style={styles.postText}>{item.post}</Text>
-        </View>
-        <ScrollView horizontal={true}>
-          {item.images &&
-            item.images.map((photo, i) => (
-              <Image
-                key={i}
-                source={{ uri: photo }}
-                style={{
-                  width: Dimensions.get("window").height * 0.23,
-                  height: Dimensions.get("window").height * 0.23,
-                  margin: 5,
-                  padding: 5,
-                }}
-              />
-            ))}
-        </ScrollView>
-        <View style={styles.likes}>
-          {item.likes == null && <Text> {item.likes} 0 likes </Text>}
-          {item.likes != null && <Text> {item.likes.length} likes </Text>}
-        </View>
-      </View>
-    );
   };
 
   const noPostsComponent = () => {
