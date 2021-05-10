@@ -15,6 +15,8 @@ import React, { useState } from "react";
 import db from "../firebase";
 import moment from "moment";
 import { useFocusEffect } from "@react-navigation/native";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+
 
 /**
  * This component shows a profile which includes the number of followers
@@ -22,49 +24,65 @@ import { useFocusEffect } from "@react-navigation/native";
  * when user presses the "Profile" button from the tab bar. Clicking on
  * a past trip will take you to the trip overview.
  */
-export default function PastTrips({ navigation, route }) {
+export default function FriendProfile({ navigation, route }) {
   const { item } = route.params;
   const [loading, setLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [pastTrips, setPastTrips] = useState([]);
+  const [pastPosts, setPastPosts] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
+  const [buttonText, setButtonText] = useState("Follow");
+  const [likesUsers, setLikesUsers] = useState({});
+  const [isFollowingRequested, setIsFollowingRequested] = useState(false);
+  const myUid = firebase.auth().currentUser.uid;
 
-  const parseTripsFromDatabase = (tripsFromDatabase) => {
-    const parsedTrips = [];
+  const parsePostsFromDatabase = (postsFromDatabase) => {
+    const parsedPosts = [];
     const uid = firebase.auth().currentUser.uid;
     const usersRef = firebase.firestore().collection("users");
     usersRef.doc(uid).onSnapshot((userDoc) => {
+      console.log("userDoc.data()", userDoc.data());
       if (userDoc.data()["following"].includes(item.uid)) {
         setIsFollowing(true);
-        tripsFromDatabase.forEach((trip) => {
+        postsFromDatabase.forEach((trip) => {
           const tripData = trip.data();
           if (tripData.uid == item.uid) {
             tripData["id"] = trip.id;
-            tripData["tripTitle"] = tripData.tripTitleText;
-            parsedTrips.push(tripData);
+            parsedPosts.push(tripData);
           }
         });
+      } else if (userDoc.data()["followingRequests"].includes(item.uid)) {
+        setIsFollowingRequested(true);
+      }
+      if (parsedPosts.length != pastPosts.length) {
+        // Could potentially add more rigorous check than length
+        setPastPosts(parsedPosts);
       }
     });
-    return parsedTrips;
   };
 
-  const loadPastTrips = async () => {
+  const loadPastPosts = async () => {
     setLoading(true);
-    setPastTrips([]);
     const collRef = db.collection("trips");
     const tripsFromDatabase = await collRef.orderBy("time", "desc").get();
-    const parsedTrips = parseTripsFromDatabase(tripsFromDatabase);
-    setPastTrips(parsedTrips);
+    parsePostsFromDatabase(tripsFromDatabase);
     setLoading(false);
   };
 
   useFocusEffect(
     React.useCallback(() => {
-      loadPastTrips();
+      let isMounted = true;
+      const uid = firebase.auth().currentUser.uid;
+      const usersRef = firebase.firestore().collection("users");
+      usersRef.doc(uid).onSnapshot((userDoc) => {
+        if (userDoc.data()["followingRequests"].includes(item.uid)) {
+          setIsFollowingRequested(true);
+          setButtonText("Requested");
+        }
+      });
+      loadPastPosts();
       getFriendUser();
-    }, [])
+    }, [pastPosts])
   );
 
   const getFriendUser = () => {
@@ -75,49 +93,117 @@ export default function PastTrips({ navigation, route }) {
     });
   };
 
-  const onFollowUser = async () => {
-    const myUid = firebase.auth().currentUser.uid;
-    const myRef = firebase.firestore().collection("users").doc(myUid);
-    const theirRef = firebase.firestore().collection("users").doc(item.uid);
-    const myRes = myRef.update({
-      following: firebase.firestore.FieldValue.arrayUnion(item.uid)
-    });
-    const theirRes = theirRef.update({
-      followers: firebase.firestore.FieldValue.arrayUnion(myUid)
-    });
-    Promise.all([myRes, theirRes])
-      .then(() => setIsFollowing(true))
-      .catch(error => alert(error));
-  }
-
   const onUnfollowUser = async () => {
-    const myUid = firebase.auth().currentUser.uid;
     const myRef = firebase.firestore().collection("users").doc(myUid);
     const theirRef = firebase.firestore().collection("users").doc(item.uid);
     const myRes = myRef.update({
-      following: firebase.firestore.FieldValue.arrayRemove(item.uid)
+      following: firebase.firestore.FieldValue.arrayRemove(item.uid),
     });
     const theirRes = theirRef.update({
-      followers: firebase.firestore.FieldValue.arrayRemove(myUid)
+      followers: firebase.firestore.FieldValue.arrayRemove(myUid),
     });
     Promise.all([myRes, theirRes])
       .then(() => setIsFollowing(false))
-      .catch(error => alert(error));
-  }
+      .catch((error) => alert(error));
+  };
 
-  const pastTripComponent = ({ item }) => {
+  const onRequestUser = async () => {
+    const myRef = firebase.firestore().collection("users").doc(myUid);
+    const theirRef = firebase.firestore().collection("users").doc(item.uid);
+    if (buttonText == "Requested") {
+      const myRes = myRef.update({
+        followingRequests: firebase.firestore.FieldValue.arrayRemove(item.uid),
+      });
+      const theirRes = theirRef.update({
+        followerRequests: firebase.firestore.FieldValue.arrayRemove(myUid),
+      });
+      Promise.all([myRes, theirRes])
+        .then(() => setIsFollowingRequested(false))
+        .catch((error) => alert(error));
+      setButtonText("Follow");
+    } else {
+      const myRes = myRef.update({
+        followingRequests: firebase.firestore.FieldValue.arrayUnion(item.uid),
+      });
+      const theirRes = theirRef.update({
+        followerRequests: firebase.firestore.FieldValue.arrayUnion(myUid),
+      });
+      Promise.all([myRes, theirRes])
+        .then(() => setIsFollowingRequested(true))
+        .catch((error) => alert(error));
+      setButtonText("Requested");
+    }
+  };
+
+  const onUserLike = async (item) => {
+    if (item.likes != null && item.uid != myUid) {
+      // Check to make sure it's not your own post
+      const tripRef = await db.collection("posts").doc(item.id);
+      if (item.likes.includes(myUid)) {
+        tripRef.update({
+          likes: firebase.firestore.FieldValue.arrayRemove(myUid),
+        });
+        const index = item.likes.indexOf(myUid);
+        if (index > -1) {
+          item.likes.splice(index, 1);
+        }
+      } else {
+        item.likes.push(myUid);
+        tripRef.update({
+          likes: firebase.firestore.FieldValue.arrayUnion(myUid),
+        });
+      }
+      const newLikesUsers = { ...likesUsers, [item.id]: item.likes };
+      setLikesUsers(newLikesUsers);
+      // There is probably a way around likesUsers - used this to get rereneder to occur
+    }
+  };
+
+  const pastPostComponent = ({ item }) => {
     return (
       <TouchableOpacity
-        onPress={() => navigation.navigate("Past Trip", item)}
+        // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
+       <Text style={styles.time}>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
         <View style={styles.cardHeader}>
-          <Text style={styles.tripName}>{item.tripTitle}</Text>
-          <Text>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
+          <Text style={styles.postText}>{item.post}</Text>
         </View>
-        <View style={styles.tripCard}>
-          {tripViewComponent(item.pins, findRegion(item.pins, item.coordinates), item.coordinates)}
+        <View>
+          {item.likes == null && <Text> {item.likes} 0 likes </Text>}
+          {item.likes != null && <Text> {item.likes.length} likes </Text>}
         </View>
+        <View
+          style={{
+            paddingTop: 10,
+            borderBottomColor: "lightgray",
+            borderBottomWidth: 1,
+          }}
+        />
+        {item.likes != null && item.likes.includes(myUid) && (
+          <TouchableOpacity onPress={() => onUserLike(item)}>
+            <View>
+              <MaterialCommunityIcons
+                style={styles.icon}
+                name="thumb-up-outline"
+                color={"#00A398"}
+                size={25}
+              />
+            </View>
+          </TouchableOpacity>
+        )}
+        {item.likes != null && !item.likes.includes(myUid) && (
+          <TouchableOpacity onPress={() => onUserLike(item)}>
+            <View>
+              <MaterialCommunityIcons
+                style={styles.icon}
+                name="thumb-up-outline"
+                color={"#808080"}
+                size={25}
+              />
+            </View>
+          </TouchableOpacity>
+        )}
       </TouchableOpacity>
     );
   };
@@ -128,52 +214,67 @@ export default function PastTrips({ navigation, route }) {
     );
   };
 
+  const onPressFollowers = () => {
+    if (followers.includes(myUid)) {
+      const data = { follow: followers, isFollowers: true };
+      navigation.navigate("Follow", data);
+    }
+  };
+
+  const onPressFollowing = () => {
+    if (followers.includes(myUid)) {
+      const data = { follow: following, isFollowers: false };
+      navigation.navigate("Follow", data);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.name}>
-        {item.displayName}
-      </Text>
+      <Text style={styles.name}>{item.displayName}</Text>
       <View style={styles.row}>
-        <Text style={styles.follow}>{followers.length} Followers</Text>
-        <Text style={styles.follow}>{following.length} Following</Text>
+        <TouchableOpacity onPress={onPressFollowers}>
+          <Text style={styles.follow}>{followers.length} Followers</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onPressFollowing}>
+          <Text style={styles.follow}>{following.length} Following</Text>
+        </TouchableOpacity>
         {isFollowing ? (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={onUnfollowUser}
-            style={[styles.button, {backgroundColor: "#AEB8C1"}]}>
-            <Text style={styles.buttonText}>
-              Following
-            </Text>
+            style={[styles.button, { backgroundColor: "#AEB8C1" }]}
+          >
+            <Text style={styles.buttonText}>Following</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            onPress={onFollowUser}
-            style={[styles.button, {backgroundColor: "#00A398"}]}>
-            <Text style={styles.buttonText}>
-              Follow
-            </Text>
+            onPress={onRequestUser}
+            style={[styles.button, { backgroundColor: "#00A398" }]}
+          >
+            <Text style={styles.buttonText}>{buttonText}</Text>
           </TouchableOpacity>
         )}
       </View>
       <Text style={styles.header}>Past Trips</Text>
       {loading ? (
-        <ActivityIndicator />
+        <ActivityIndicator style={styles.activityIndicator} size={"large"} />
+      ) : isFollowing ? (
+        <FlatList
+          data={pastPosts}
+          renderItem={pastPostComponent}
+          ListEmptyComponent={noTripsComponent}
+        />
       ) : (
-        isFollowing ? (
-          <FlatList 
-            data={pastTrips} 
-            renderItem={pastTripComponent}
-            ListEmptyComponent={noTripsComponent}
-          />
-        ) : (
-          <View style={styles.private}>
-            <Text style={styles.privateLargeText}>This Account is Private</Text>
-            <Text style={styles.privateText}>Follow this account to see their trips.</Text>
-          </View>
-        )
+        <View style={styles.private}>
+          <Text style={styles.privateLargeText}>This Account is Private</Text>
+          <Text style={styles.privateText}>
+            Follow this account to see their trips.
+          </Text>
+        </View>
       )}
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -260,5 +361,9 @@ const styles = StyleSheet.create({
   noTripText: {
     fontSize: 15,
     alignSelf: "center",
+  },
+  postText: {
+    fontSize: 20,
+    fontWeight: "bold",
   },
 });

@@ -21,7 +21,7 @@ export default function Signup({ navigation }) {
 
   const handleSignUp = async () => {
     firebase.auth().createUserWithEmailAndPassword(email, password)
-      .then(function(userCred) {  
+      .then(function(userCred) {
         console.log(userCred);
         userCred.user.updateProfile({
           displayName: name
@@ -30,15 +30,17 @@ export default function Signup({ navigation }) {
           uid: userCred.user.uid,
           email: email,
           displayName: name,
-          trips: {},
           username: username,
           followers: [],
-          following: []
+          following: [],
+          followerRequests: [],
+          followingRequests: [],
+          openAppTimestamps: [],
+          hasDoneNPS: false,
         }
         db.collection("users")
           .doc(userCred.user.uid)
           .set(user);
-        navigation.navigate("Home")
       }).catch((error) => {
         alert(error);
       });
@@ -46,7 +48,6 @@ export default function Signup({ navigation }) {
 
   const onPressSignUp = () => {
     handleSignUp();
-    navigation.navigate("Road Trip Buddy", { screen: "Home" });
   }
 
   return (
@@ -126,8 +127,8 @@ const styles = StyleSheet.create({
 		backgroundColor: "#00A398",
 		borderColor: "#00A398",
 		borderWidth: 1,
-		borderRadius: 5,
     width: "90%",
+    borderRadius: 18,
 	},
 	buttonText: {
 		fontSize: 20,
