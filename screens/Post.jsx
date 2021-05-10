@@ -1,17 +1,47 @@
+import * as ImagePicker from "expo-image-picker";
+import * as firebase from "firebase";
+
 import {
+  Image,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
-  TextInput,
-  ScrollView,
-  Image,
 } from "react-native";
 import React, { useState } from "react";
-import * as firebase from "firebase";
-import db from "../firebase";
+
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import * as ImagePicker from "expo-image-picker";
+import db from "../firebase";
+
+export const getImageUrl = (uri) => {
+  const splitURI = uri.split("/");
+  const filename = splitURI[splitURI.length - 1];
+  const path = "/post_assets/";
+  var storageRef = firebase.storage().ref(path);
+  const ref = storageRef.child(`${filename}`);
+  const url = "gs://" + "cs278-app.appspot.com" + path + filename;
+  return fetch(uri)
+    .then((response) => response.blob())
+    .then((blob) => {
+      return ref.put(blob).then((snapshot) => {
+        return firebase
+          .storage()
+          .refFromURL(url)
+          .getDownloadURL()
+          .then(function (imageUrl) {
+            return imageUrl;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      });
+    })
+    .catch((error) => {
+      console.log("Error My Guy!", error);
+    });
+};
 
 export default function Post({ navigation }) {
   const [text, setText] = useState("");
@@ -19,19 +49,28 @@ export default function Post({ navigation }) {
 
   const onPost = () => {
     const user = firebase.auth().currentUser;
-    const post = {
-      post: text,
-      time: new Date().toISOString(),
-      uid: user.uid,
-    };
-    db.collection("posts")
-      .add(post)
-      .then(() => {
-        console.log("Posts successfully written!");
-      })
-      .catch((error) => {
-        console.error("Error writing document: ", error);
-      });
+    const promises = [];
+    for (let photo of photos) {
+      promises.push(getImageUrl(photo.uri));
+    }
+    Promise.all(promises).then((urls) => {
+      const post = {
+        post: text,
+        time: new Date().toISOString(),
+        uid: user.uid,
+        images: urls,
+      };
+      db.collection("posts")
+        .add(post)
+        .then(() => {
+          console.log("Posts successfully written!", post);
+        })
+        .catch((error) => {
+          console.error("Error writing document: ", error);
+        });
+      setPhotos([]);
+      setText("");
+    });
   };
 
   const onAddPic = async () => {
@@ -52,7 +91,7 @@ export default function Post({ navigation }) {
   return (
     <ScrollView>
       <View style={{ flexDirection: "row" }}>
-      <Text style={styles.name}>
+        <Text style={styles.name}>
           {firebase.auth().currentUser.displayName}
         </Text>
         <MaterialCommunityIcons
@@ -72,6 +111,7 @@ export default function Post({ navigation }) {
         maxLength={240}
         placeholder="What do you want to say?"
         onChangeText={(textVal) => setText(textVal)}
+        value={text}
       />
       <ScrollView horizontal={true}>
         {photos.map((photo, i) => (
