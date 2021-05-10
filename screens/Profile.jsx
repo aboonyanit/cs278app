@@ -8,6 +8,7 @@ import {
   Keyboard,
   Modal,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -95,8 +96,10 @@ export default function Profile({ navigation }) {
   };
 
   const pastPostComponent = ({ item }) => {
+    // console.log(item);
     return (
-      <TouchableOpacity
+      <View
+        // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
         <Text style={styles.time}>
@@ -105,11 +108,26 @@ export default function Profile({ navigation }) {
         <View style={styles.cardHeader}>
           <Text style={styles.postText}>{item.post}</Text>
         </View>
+        <ScrollView horizontal={true}>
+          {item.images &&
+            item.images.map((photo, i) => (
+              <Image
+                key={i}
+                source={{ uri: photo }}
+                style={{
+                  width: Dimensions.get("window").height * 0.23,
+                  height: Dimensions.get("window").height * 0.23,
+                  margin: 5,
+                  padding: 5,
+                }}
+              />
+            ))}
+        </ScrollView>
         <View style={styles.likes}>
           {item.likes == null && <Text> {item.likes} 0 likes </Text>}
           {item.likes != null && <Text> {item.likes.length} likes </Text>}
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
