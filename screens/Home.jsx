@@ -18,86 +18,114 @@ import React, { useEffect, useState } from "react";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import db from "../firebase";
 import moment from "moment";
-
-export const pastPostComponent = ({ item }) => {
-  const myUid = firebase.auth().currentUser.uid;
-
-  return (
-    <TouchableOpacity
-      // onPress={() => navigation.navigate("Past Trip", item)}
-      style={styles.itemContainer}
-    >
-      <Text>By: {item.usersName}</Text>
-
-      <Text style={styles.time}>
-        {moment(item.time, moment.ISO_8601).format("LLL")}
-      </Text>
-      <View style={styles.cardHeader}>
-        <Text style={styles.postText}>{item.post}</Text>
-      </View>
-      <ScrollView horizontal={true}>
-        {item.images &&
-          item.images.map((photo, i) => (
-            <Image
-              key={i}
-              source={{ uri: photo }}
-              style={{
-                width: Dimensions.get("window").height * 0.23,
-                height: Dimensions.get("window").height * 0.23,
-                margin: 5,
-                padding: 5,
-              }}
-            />
-          ))}
-      </ScrollView>
-      <View style={styles.likes}>
-        {item.likes == null && <Text> {item.likes} 0 likes </Text>}
-        {item.likes != null && <Text> {item.likes.length} likes </Text>}
-      </View>
-      <View
-        style={{
-          paddingTop: 10,
-          borderBottomColor: "lightgray",
-          borderBottomWidth: 1,
-        }}
-      />
-      {item.likes != null && item.likes.includes(myUid) && (
-        <TouchableOpacity onPress={() => onUserLike(item)}>
-          <View>
-            <MaterialCommunityIcons
-              style={styles.icon}
-              name="thumb-up-outline"
-              color={"#00A398"}
-              size={25}
-            />
-          </View>
-        </TouchableOpacity>
-      )}
-      {item.likes != null && !item.likes.includes(myUid) && (
-        <TouchableOpacity onPress={() => onUserLike(item)}>
-          <View>
-            <MaterialCommunityIcons
-              style={styles.icon}
-              name="thumb-up-outline"
-              color={"#808080"}
-              size={25}
-            />
-          </View>
-        </TouchableOpacity>
-      )}
-    </TouchableOpacity>
-  );
-};
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function Home({ navigation }) {
   const [postItems, setPostItems] = useState(["asdasd"]);
   const [isLoading, setIsLoading] = useState(true);
   const [likesUsers, setLikesUsers] = useState({});
+  const [friendsPic, setFriendsPic] = useState({});
+
   const myUid = firebase.auth().currentUser.uid;
+
+  const pastPostComponent = ({ item }) => {
+    const myUid = firebase.auth().currentUser.uid;
+    const profilePicture = friendsPic[item.uid];
+    return (
+      <View
+        // onPress={() => navigation.navigate("Past Trip", item)}
+        style={styles.itemContainer}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {profilePicture ? (
+            <Image style={styles.profilePic} source={{ uri: profilePicture }} />
+          ) : (
+            <MaterialCommunityIcons
+              name="account-circle"
+              color={"#808080"}
+              size={50}
+            />
+          )}
+          <Text>By: {item.usersName}</Text>
+        </View>
+        <Text style={styles.time}>
+          {moment(item.time, moment.ISO_8601).format("LLL")}
+        </Text>
+        <View style={styles.cardHeader}>
+          <Text style={styles.postText}>{item.post}</Text>
+        </View>
+        <ScrollView horizontal={true}>
+          {item.images &&
+            item.images.map((photo, i) => (
+              <Image
+                key={i}
+                source={{ uri: photo }}
+                style={{
+                  width: Dimensions.get("window").height * 0.23,
+                  height: Dimensions.get("window").height * 0.23,
+                  margin: 5,
+                  padding: 5,
+                }}
+              />
+            ))}
+        </ScrollView>
+        <View style={styles.likes}>
+          {item.likes == null && <Text> {item.likes} 0 likes </Text>}
+          {item.likes != null && <Text> {item.likes.length} likes </Text>}
+        </View>
+        <View
+          style={{
+            paddingTop: 10,
+            borderBottomColor: "lightgray",
+            borderBottomWidth: 1,
+          }}
+        />
+        {item.likes != null && item.likes.includes(myUid) && (
+          <TouchableOpacity onPress={() => onUserLike(item)}>
+            <View>
+              <MaterialCommunityIcons
+                style={styles.icon}
+                name="thumb-up-outline"
+                color={"#00A398"}
+                size={25}
+              />
+            </View>
+          </TouchableOpacity>
+        )}
+        {item.likes != null && !item.likes.includes(myUid) && (
+          <TouchableOpacity onPress={() => onUserLike(item)}>
+            <View>
+              <MaterialCommunityIcons
+                style={styles.icon}
+                name="thumb-up-outline"
+                color={"#808080"}
+                size={25}
+              />
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   useEffect(() => {
     loadFeedPosts();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      async function fetchUsersPics() {
+        const dbUsers = await db.collection("users").get();
+        var userPicDict = {};
+        dbUsers.forEach((user) => {
+          const userData = user.data();
+          userPicDict[userData.uid] = userData.profilePicture;
+        });
+        setFriendsPic(userPicDict);
+      }
+      fetchUsersPics();
+    }, [])
+  );
 
   const loadFeedPosts = async () => {
     setIsLoading(true);
@@ -283,5 +311,12 @@ const styles = StyleSheet.create({
   icon: {
     alignSelf: "center",
     marginVertical: 10,
+  },
+  profilePic: {
+    width: Dimensions.get("window").height * 0.058,
+    height: Dimensions.get("window").height * 0.058,
+    borderRadius: 50,
+    margin: 5,
+    marginLeft: 0,
   },
 });
