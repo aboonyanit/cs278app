@@ -1,13 +1,20 @@
-import React, { useEffect, useState } from "react";
+import * as firebase from "firebase";
+
 import {
-  View,
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  FlatList,
-  StyleSheet,
+  View,
 } from "react-native";
+import React, { useEffect, useState } from "react";
+
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { Searchbar } from "react-native-paper";
-import * as firebase from "firebase";
+import db from "../firebase";
+import { useFocusEffect } from "@react-navigation/native";
 import uuidv4 from "uuid/v4";
 
 export default function SearchScreen({ navigation }) {
@@ -17,6 +24,22 @@ export default function SearchScreen({ navigation }) {
   const [users, setUsers] = useState([]);
   const onChangeSearch = (query) => setSearchQuery(query);
   const [loading, setLoading] = useState(true);
+  const [friendsPic, setFriendsPic] = useState({});
+
+  useFocusEffect(
+    React.useCallback(() => {
+      async function fetchUsersPics() {
+        const dbUsers = await db.collection("users").get();
+        var userPicDict = {};
+        dbUsers.forEach((user) => {
+          const userData = user.data();
+          userPicDict[userData.uid] = userData.profilePicture;
+        });
+        setFriendsPic(userPicDict);
+      }
+      fetchUsersPics();
+    }, [])
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -99,10 +122,25 @@ export default function SearchScreen({ navigation }) {
                       .includes(searchQuery.toLowerCase()))
                 ) {
                   return (
-                    <TouchableOpacity style={styles.userCard} onPress={() => onPressUser(item)}>
+                    <TouchableOpacity
+                      style={styles.userCard}
+                      onPress={() => onPressUser(item)}
+                    >
+                      {friendsPic[item.uid] ? (
+                        <Image
+                          style={styles.profilePic}
+                          source={{ uri: friendsPic[item.uid] }}
+                        />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name="account-circle"
+                          color={"#808080"}
+                          size={58}
+                        />
+                      )}
                       <View style={styles.userCardInfo}>
                         <View style={styles.userCardRow}>
-                          <Text style={styles.userTitle}>{item.username}</Text> 
+                          <Text style={styles.userTitle}>{item.username}</Text>
                         </View>
                         <Text style={styles.userText}>{item.displayName}</Text>
                       </View>
@@ -155,6 +193,7 @@ const styles = StyleSheet.create({
     padding: 5,
     borderRadius: 10,
     flexDirection: "row",
+    alignItems: "center",
   },
   userTitle: {
     fontSize: 14,
@@ -171,5 +210,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  profilePic: {
+    width: Dimensions.get("window").height * 0.058,
+    height: Dimensions.get("window").height * 0.058,
+    borderRadius: 25,
+    margin: 4,
   },
 });

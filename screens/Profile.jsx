@@ -1,3 +1,4 @@
+import * as ImagePicker from "expo-image-picker";
 import * as firebase from "firebase";
 
 import {
@@ -8,6 +9,7 @@ import {
   Keyboard,
   Modal,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -18,7 +20,8 @@ import React, { useState } from "react";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { TextInput } from "react-native-gesture-handler";
 import db from "../firebase";
-import { pastPostComponent } from "./Home";
+import { getImageUrl } from "./Post";
+import moment from "moment";
 import { useFocusEffect } from "@react-navigation/native";
 
 /**
@@ -35,7 +38,58 @@ export default function Profile({ navigation }) {
   const [pastPosts, setPastPosts] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
+  const [profilePicture, setProfilePicture] = useState(null);
 
+  const pastPostComponent = ({ item }) => {
+    const myUid = firebase.auth().currentUser.uid;
+    return (
+      <View
+        // onPress={() => navigation.navigate("Past Trip", item)}
+        style={styles.itemContainer}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {profilePicture ? (
+            <Image
+              style={styles.smallProfilePic}
+              source={{ uri: profilePicture }}
+            />
+          ) : (
+            <MaterialCommunityIcons
+              name="account-circle"
+              color={"#808080"}
+              size={50}
+            />
+          )}
+          <Text>By: {firebase.auth().currentUser.displayName}</Text>
+        </View>
+        <Text style={styles.time}>
+          {moment(item.time, moment.ISO_8601).format("LLL")}
+        </Text>
+        <View style={styles.cardHeader}>
+          <Text style={styles.postText}>{item.post}</Text>
+        </View>
+        <ScrollView horizontal={true}>
+          {item.images &&
+            item.images.map((photo, i) => (
+              <Image
+                key={i}
+                source={{ uri: photo }}
+                style={{
+                  width: Dimensions.get("window").height * 0.23,
+                  height: Dimensions.get("window").height * 0.23,
+                  margin: 5,
+                  padding: 5,
+                }}
+              />
+            ))}
+        </ScrollView>
+        <View style={styles.likes}>
+          {item.likes == null && <Text> {item.likes} 0 likes </Text>}
+          {item.likes != null && <Text> {item.likes.length} likes </Text>}
+        </View>
+      </View>
+    );
+  };
   const parsePostsFromDatabase = (postsFromDatabase) => {
     const parsedPosts = [];
     const user = firebase.auth().currentUser;
@@ -73,6 +127,7 @@ export default function Profile({ navigation }) {
       setCurrBio(userDoc.data()["bio"] ?? "Hi there!");
       setFollowers(userDoc.data()["followers"]);
       setFollowing(userDoc.data()["following"]);
+      setProfilePicture(userDoc.data()["profilePicture"]);
     });
   };
 
@@ -92,6 +147,26 @@ export default function Profile({ navigation }) {
       isFollowers: false,
     };
     navigation.navigate("Follow", data);
+  };
+
+  const addProfilePicture = async () => {
+    const userRef = await db
+      .collection("users")
+      .doc(firebase.auth().currentUser.uid);
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      base64: true,
+      quality: 0,
+    });
+    if (!result.cancelled) {
+      getImageUrl(result.uri).then((url) => {
+        userRef.update({
+          profilePicture: url,
+        });
+        setProfilePicture(url);
+      });
+    }
   };
 
   const noPostsComponent = () => {
@@ -119,6 +194,19 @@ export default function Profile({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.spaceBetweenRow}>
+        {profilePicture ? (
+          <TouchableOpacity onPress={addProfilePicture}>
+            <Image style={styles.profilePic} source={{ uri: profilePicture }} />
+          </TouchableOpacity>
+        ) : (
+          <MaterialCommunityIcons
+            style={styles.profileIcon}
+            name="account-circle"
+            color={"#808080"}
+            size={90}
+            onPress={addProfilePicture}
+          />
+        )}
         <Text style={styles.name}>
           {firebase.auth().currentUser.displayName}
         </Text>
@@ -317,5 +405,18 @@ const styles = StyleSheet.create({
     height: 30,
     marginLeft: 250,
     marginBottom: 20,
+  },
+  profilePic: {
+    width: Dimensions.get("window").height * 0.1,
+    height: Dimensions.get("window").height * 0.1,
+    margin: 10,
+    borderRadius: 50,
+  },
+  smallProfilePic: {
+    width: Dimensions.get("window").height * 0.058,
+    height: Dimensions.get("window").height * 0.058,
+    borderRadius: 50,
+    margin: 5,
+    marginLeft: 0,
   },
 });
