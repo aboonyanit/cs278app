@@ -59,7 +59,7 @@ export default function Post({ navigation }) {
         time: new Date().toISOString(),
         uid: user.uid,
         images: urls,
-        likes: []
+        likes: [],
       };
       db.collection("posts")
         .add(post)
@@ -71,6 +71,7 @@ export default function Post({ navigation }) {
         });
       setPhotos([]);
       setText("");
+      navigation.navigate("Home");
     });
   };
 
