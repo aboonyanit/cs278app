@@ -87,6 +87,37 @@ export default function Profile({ navigation }) {
           {item.likes == null && <Text> {item.likes} 0 likes </Text>}
           {item.likes != null && <Text> {item.likes.length} likes </Text>}
         </View>
+        <View
+          style={{
+            paddingTop: 10,
+            borderBottomColor: "lightgray",
+            borderBottomWidth: 1,
+          }}
+        />
+        {item.likes != null && item.likes.includes(myUid) && (
+          <TouchableOpacity onPress={() => onUserLike(item)}>
+            <View>
+              <MaterialCommunityIcons
+                style={styles.icon}
+                name="thumb-up-outline"
+                color={"#00A398"}
+                size={25}
+              />
+            </View>
+          </TouchableOpacity>
+        )}
+        {item.likes != null && !item.likes.includes(myUid) && (
+          <TouchableOpacity onPress={() => onUserLike(item)}>
+            <View>
+              <MaterialCommunityIcons
+                style={styles.icon}
+                name="thumb-up-outline"
+                color={"#808080"}
+                size={25}
+              />
+            </View>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -418,5 +449,9 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     margin: 5,
     marginLeft: 0,
+  },
+  icon: {
+    alignSelf: "center",
+    marginVertical: 10,
   },
 });
