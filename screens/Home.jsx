@@ -5,6 +5,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Modal,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -15,6 +16,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 
+import Clipboard from "expo-clipboard";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import db from "../firebase";
 import moment from "moment";
@@ -25,6 +27,7 @@ export default function Home({ navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const [likesUsers, setLikesUsers] = useState({});
   const [friendsPic, setFriendsPic] = useState({});
+  const [contactPressed, setContactPressed] = useState(false);
 
   const myUid = firebase.auth().currentUser.uid;
 
@@ -36,17 +39,33 @@ export default function Home({ navigation }) {
         // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          {profilePicture ? (
-            <Image style={styles.profilePic} source={{ uri: profilePicture }} />
-          ) : (
-            <MaterialCommunityIcons
-              name="account-circle"
-              color={"#808080"}
-              size={50}
-            />
-          )}
-          <Text>By: {item.usersName}</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            {profilePicture ? (
+              <Image
+                style={styles.profilePic}
+                source={{ uri: profilePicture }}
+              />
+            ) : (
+              <MaterialCommunityIcons
+                name="account-circle"
+                color={"#808080"}
+                size={50}
+              />
+            )}
+            <Text>By: {item.usersName}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => setContactPressed([item.usersName, item.email])}
+          >
+            <Text style={styles.buttonText}>Contact</Text>
+          </TouchableOpacity>
         </View>
         <Text style={styles.time}>
           {moment(item.time, moment.ISO_8601).format("LLL")}
@@ -129,7 +148,6 @@ export default function Home({ navigation }) {
 
   const loadFeedPosts = async () => {
     setIsLoading(true);
-    setPostItems([]);
     const feedPosts = await parseTripsForFeed();
     setPostItems(feedPosts);
     setIsLoading(false);
@@ -145,7 +163,8 @@ export default function Home({ navigation }) {
       postBatch.forEach((post) => {
         const postData = post.data();
         const usersId = postData["uid"];
-        postData["usersName"] = userIdToNameMap[usersId];
+        postData["usersName"] = userIdToNameMap[usersId][0];
+        postData["email"] = userIdToNameMap[usersId][1];
         postData["id"] = post.id;
         likeUserDict[post.id] = postData.likes;
         parsedPosts.push(postData);
@@ -197,7 +216,8 @@ export default function Home({ navigation }) {
         const userData = user.data();
         const uid = userData["uid"];
         const name = userData["displayName"];
-        userIdToName[uid] = name;
+        const email = userData["email"];
+        userIdToName[uid] = [name, email];
       });
     }
     return userIdToName;
@@ -240,7 +260,7 @@ export default function Home({ navigation }) {
     <SafeAreaView style={styles.container}>
       {isLoading ? (
         <ActivityIndicator />
-      ) : (
+      ) : contactPressed == false ? (
         <FlatList
           data={postItems}
           renderItem={pastPostComponent}
@@ -249,6 +269,31 @@ export default function Home({ navigation }) {
             <RefreshControl refreshing={isLoading} onRefresh={loadFeedPosts} />
           }
         />
+      ) : (
+        <View style={styles.centeredView}>
+          <Modal animationType="slide" transparent={true}>
+            <View style={styles.centeredView}>
+              <View style={styles.modalView}>
+                <TouchableOpacity onPress={() => setContactPressed(false)}>
+                  <Image
+                    source={require("../assets/close-button.png")}
+                    style={styles.exit}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => Clipboard.setString(contactPressed[1])}
+                >
+                  <Text style={styles.modalText}>
+                    {contactPressed[0]}'s Contact Info (Press to Copy):
+                  </Text>
+                  <Text style={styles.modalText}>
+                    Email: {contactPressed[1]}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -319,4 +364,47 @@ const styles = StyleSheet.create({
     margin: 5,
     marginLeft: 0,
   },
+  button: {
+    margin: 10,
+    padding: 5,
+    backgroundColor: "#00A398",
+    borderColor: "#00A398",
+    borderWidth: 1,
+    alignItems: "center",
+    height: "50%",
+    borderRadius: 18,
+  },
+  buttonText: {
+    color: "#fff",
+    textAlign: "center",
+    textAlignVertical: "center",
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  exit: {
+    width: Dimensions.get("window").height * 0.032,
+    height: Dimensions.get("window").height * 0.032,
+    marginLeft: 250,
+    marginBottom: 20,
+  },
+  modalText: { fontSize: 17 },
 });
