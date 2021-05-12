@@ -12,11 +12,10 @@ import {
 } from "react-native";
 import React, { useState } from "react";
 
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import db from "../firebase";
 import moment from "moment";
 import { useFocusEffect } from "@react-navigation/native";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-
 
 /**
  * This component shows a profile which includes the number of followers
@@ -139,7 +138,7 @@ export default function FriendProfile({ navigation, route }) {
     if (item.likes != null && item.uid != myUid) {
       // Check to make sure it's not your own post
       const postRef = await db.collection("posts").doc(item.id);
-      if (item.likes.includes(myUid)) {
+      if (item.likes && item.likes.includes(myUid)) {
         postRef.update({
           likes: firebase.firestore.FieldValue.arrayRemove(myUid),
         });
@@ -165,7 +164,9 @@ export default function FriendProfile({ navigation, route }) {
         // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
-       <Text style={styles.time}>{moment(item.time, moment.ISO_8601).format("LLL")}</Text>
+        <Text style={styles.time}>
+          {moment(item.time, moment.ISO_8601).format("LLL")}
+        </Text>
         <View style={styles.cardHeader}>
           <Text style={styles.postText}>{item.post}</Text>
         </View>
@@ -180,7 +181,7 @@ export default function FriendProfile({ navigation, route }) {
             borderBottomWidth: 1,
           }}
         />
-        {item.likes != null && item.likes.includes(myUid) && (
+        {item.likes && item.likes.includes(myUid) && (
           <TouchableOpacity onPress={() => onUserLike(item)}>
             <View>
               <MaterialCommunityIcons
@@ -192,7 +193,7 @@ export default function FriendProfile({ navigation, route }) {
             </View>
           </TouchableOpacity>
         )}
-        {item.likes != null && !item.likes.includes(myUid) && (
+        {item.likes && !item.likes.includes(myUid) && (
           <TouchableOpacity onPress={() => onUserLike(item)}>
             <View>
               <MaterialCommunityIcons
@@ -209,9 +210,7 @@ export default function FriendProfile({ navigation, route }) {
   };
 
   const noTripsComponent = () => {
-    return (
-      <Text style={styles.noTripText}>No posts to display!</Text>
-    );
+    return <Text style={styles.noTripText}>No posts to display!</Text>;
   };
 
   const onPressFollowers = () => {
@@ -274,7 +273,6 @@ export default function FriendProfile({ navigation, route }) {
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {

@@ -35,9 +35,7 @@ export default function Home({ navigation }) {
     const myUid = firebase.auth().currentUser.uid;
     const profilePicture = friendsPic[item.uid];
     return (
-      <View
-        style={styles.itemContainer}
-      >
+      <View style={styles.itemContainer}>
         <View
           style={{
             flexDirection: "row",
@@ -61,7 +59,9 @@ export default function Home({ navigation }) {
           </View>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => setContactPressed([item.usersName, item.email])}
+            onPress={() => {
+              setContactPressed([item.usersName, item.email]);
+            }}
           >
             <Text style={styles.buttonText}>Contact</Text>
           </TouchableOpacity>
@@ -88,11 +88,11 @@ export default function Home({ navigation }) {
             ))}
         </ScrollView>
         <View style={styles.row}>
-        <View style={styles.likes}>
-          {item.likes == null && <Text> {item.likes} 0 likes </Text>}
-          {item.likes != null && <Text> {item.likes.length} likes </Text>}
-        </View>
-        <View>
+          <View style={styles.likes}>
+            {item.likes == null && <Text> {item.likes} 0 likes </Text>}
+            {item.likes != null && <Text> {item.likes.length} likes </Text>}
+          </View>
+          <View>
             {item.comments.length != 1 && (
               <Text onPress={() => navigation.navigate("Comment", item)}>
                 {" "}
@@ -106,7 +106,7 @@ export default function Home({ navigation }) {
               </Text>
             )}
           </View>
-          </View>
+        </View>
 
         <View
           style={{
@@ -121,7 +121,11 @@ export default function Home({ navigation }) {
               <MaterialCommunityIcons
                 style={styles.icon}
                 name="thumb-up-outline"
-                color={item.likes.includes(myUid) ? "#00A398" : "#808080"}
+                color={
+                  item.likes && item.likes.includes(myUid)
+                    ? "#00A398"
+                    : "#808080"
+                }
                 size={25}
               />
             </View>
@@ -169,34 +173,35 @@ export default function Home({ navigation }) {
     setIsLoading(false);
   };
 
-    const parsePostsForFeed = async () => {
-      const parsedPosts = [];
-      const followedUserIds = await fetchMyFollowing();
-      const postsFromDatabase = await fetchUsersPosts(followedUserIds);
-      const userIdToNameMap = await fetchUsersNames(followedUserIds);
-      for (let postBatch of postsFromDatabase) {
-        for (const post of postBatch.docs) {
-          const postData = post.data();
-          const usersId = postData["uid"];
-          postData["usersName"] = userIdToNameMap[usersId];
-          postData["id"] = post.id;
-          const commentsArray = [];
-          await db
-            .collection("comments")
-            .where("postId", "==", post.id)
-            .orderBy("time", "asc")
-            .get()
-            .then((comments) => {
-              comments.forEach((comment) => {
-                commentsArray.push(comment.data());
-              });
+  const parsePostsForFeed = async () => {
+    const parsedPosts = [];
+    const followedUserIds = await fetchMyFollowing();
+    const postsFromDatabase = await fetchUsersPosts(followedUserIds);
+    const userIdToNameMap = await fetchUsersNames(followedUserIds);
+    for (let postBatch of postsFromDatabase) {
+      for (const post of postBatch.docs) {
+        const postData = post.data();
+        const usersId = postData["uid"];
+        postData["usersName"] = userIdToNameMap[usersId][0];
+        postData["email"] = userIdToNameMap[usersId][1];
+        postData["id"] = post.id;
+        const commentsArray = [];
+        await db
+          .collection("comments")
+          .where("postId", "==", post.id)
+          .orderBy("time", "asc")
+          .get()
+          .then((comments) => {
+            comments.forEach((comment) => {
+              commentsArray.push(comment.data());
             });
-            postData["comments"] = commentsArray;
-            parsedPosts.push(postData);
-        }
+          });
+        postData["comments"] = commentsArray;
+        parsedPosts.push(postData);
       }
-      return parsedPosts;
-    };
+    }
+    return parsedPosts;
+  };
 
   const fetchMyFollowing = async () => {
     const myUid = firebase.auth().currentUser.uid;
@@ -251,7 +256,7 @@ export default function Home({ navigation }) {
     if (item.likes != null) {
       // Check to make sure it's not your own post
       const postRef = await db.collection("posts").doc(item.id);
-      if (item.likes.includes(myUid)) {
+      if (item.likes && item.likes.includes(myUid)) {
         postRef.update({
           likes: firebase.firestore.FieldValue.arrayRemove(myUid),
         });
