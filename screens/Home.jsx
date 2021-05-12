@@ -87,6 +87,7 @@ export default function Home({ navigation }) {
               />
             ))}
         </ScrollView>
+        <View style={styles.row}>
         <View style={styles.likes}>
           {item.likes == null && <Text> {item.likes} 0 likes </Text>}
           {item.likes != null && <Text> {item.likes.length} likes </Text>}
@@ -105,6 +106,8 @@ export default function Home({ navigation }) {
               </Text>
             )}
           </View>
+          </View>
+
         <View
           style={{
             paddingTop: 10,
@@ -245,7 +248,7 @@ export default function Home({ navigation }) {
   };
 
   const onUserLike = async (item) => {
-    if (item.likes != null && item.uid != myUid) {
+    if (item.likes != null) {
       // Check to make sure it's not your own post
       const postRef = await db.collection("posts").doc(item.id);
       if (item.likes.includes(myUid)) {
@@ -381,6 +384,9 @@ const styles = StyleSheet.create({
   icon: {
     alignSelf: "center",
     marginVertical: 10,
+  },
+  iconView: {
+    width: Dimensions.get("window").width * 0.5,
   },
   profilePic: {
     width: Dimensions.get("window").height * 0.058,

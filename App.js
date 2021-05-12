@@ -162,7 +162,7 @@ const App = () => {
             <Stack.Screen name="Settings" component={Settings} />
             <Stack.Screen name="Friend Profile" component={FriendProfile} />
             <Stack.Screen name="Follow" component={Follow} />
-            <Stack.Screen name="Comments" component={Comment} />
+            <Stack.Screen name="Comment" component={Comment} />
           </Stack.Navigator>
         ) : (
           <Stack.Navigator>

@@ -44,7 +44,6 @@ export default function Profile({ navigation }) {
     const myUid = firebase.auth().currentUser.uid;
     return (
       <View
-        // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -83,9 +82,35 @@ export default function Profile({ navigation }) {
               />
             ))}
         </ScrollView>
-        <View style={styles.likes}>
-          {item.likes == null && <Text> {item.likes} 0 likes </Text>}
-          {item.likes != null && <Text> {item.likes.length} likes </Text>}
+       <View style={styles.row}>
+          <View>
+            {item.likes.length != 1 && (
+              <Text onPress={() => navigation.navigate("Likes", item.likes)}>
+                {" "}
+                {item.likes.length} likes{" "}
+              </Text>
+            )}
+            {item.likes.length == 1 && (
+              <Text onPress={() => navigation.navigate("Likes", item.likes)}>
+                {" "}
+                {item.likes.length} like{" "}
+              </Text>
+            )}
+          </View>
+          <View>
+            {item.comments.length != 1 && (
+              <Text onPress={() => navigation.navigate("Comment", item)}>
+                {" "}
+                {item.comments.length} comments{" "}
+              </Text>
+            )}
+            {item.comments.length == 1 && (
+              <Text onPress={() => navigation.navigate("Comment", item)}>
+                {" "}
+                {item.comments.length} comment{" "}
+              </Text>
+            )}
+          </View>
         </View>
         <View
           style={{
@@ -94,43 +119,55 @@ export default function Profile({ navigation }) {
             borderBottomWidth: 1,
           }}
         />
-        {item.likes != null && item.likes.includes(myUid) && (
+        <View style={styles.reactionBar}>
           <TouchableOpacity onPress={() => onUserLike(item)}>
-            <View>
+            <View style={styles.iconView}>
               <MaterialCommunityIcons
                 style={styles.icon}
                 name="thumb-up-outline"
-                color={"#00A398"}
+                color={item.likes.includes(myUid) ? "#00A398" : "#808080"}
                 size={25}
               />
             </View>
           </TouchableOpacity>
-        )}
-        {item.likes != null && !item.likes.includes(myUid) && (
-          <TouchableOpacity onPress={() => onUserLike(item)}>
-            <View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Comment", item)}
+          >
+            <View style={styles.iconView}>
               <MaterialCommunityIcons
                 style={styles.icon}
-                name="thumb-up-outline"
+                name="comment-text-outline"
                 color={"#808080"}
                 size={25}
               />
             </View>
           </TouchableOpacity>
-        )}
+        </View>
       </View>
     );
   };
-  const parsePostsFromDatabase = (postsFromDatabase) => {
+  const parsePostsFromDatabase = async (postsFromDatabase) => {
     const parsedPosts = [];
     const user = firebase.auth().currentUser;
-    postsFromDatabase.forEach((post) => {
+    for (const post of postsFromDatabase.docs) {
       const postData = post.data();
       if (postData.uid == user.uid) {
         postData["id"] = post.id;
+        const commentsArray = [];
+        await db
+          .collection("comments")
+          .where("postId", "==", post.id)
+          .orderBy("time", "asc")
+          .get()
+          .then((comments) => {
+            comments.forEach((comment) => {
+              commentsArray.push(comment.data());
+            });
+          });
+        postData["comments"] = commentsArray;
         parsedPosts.push(postData);
       }
-    });
+    };
     return parsedPosts;
   };
 
@@ -139,7 +176,7 @@ export default function Profile({ navigation }) {
     setPastPosts([]);
     const collRef = db.collection("posts");
     const tripsFromDatabase = await collRef.orderBy("time", "desc").get();
-    const parsedPosts = parsePostsFromDatabase(tripsFromDatabase);
+    const parsedPosts = await parsePostsFromDatabase(tripsFromDatabase);
     setPastPosts(parsedPosts);
     setLoading(false);
   };
@@ -365,6 +402,8 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
   },
   icon: {
     marginRight: 8,
@@ -453,5 +492,12 @@ const styles = StyleSheet.create({
   icon: {
     alignSelf: "center",
     marginVertical: 10,
+  },
+  reactionBar: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconView: {
+    width: Dimensions.get("window").width * 0.5,
   },
 });

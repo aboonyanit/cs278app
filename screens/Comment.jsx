@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  FlatList
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import moment from "moment";
@@ -13,7 +14,6 @@ import db from "../firebase";
 import * as firebase from "firebase";
 import { TextInput } from "react-native-gesture-handler";
 import uuidv4 from "uuid/v4";
-import { KeyboardAwareFlatList } from "react-native-keyboard-aware-scroll-view";
 
 export default function Comment({ route }) {
   const item = route.params;
@@ -76,7 +76,7 @@ export default function Comment({ route }) {
   };
 
   return (
-    <KeyboardAwareFlatList
+    <FlatList
       style={styles.container}
       keyboardShouldPersistTaps={"handled"}
       ListHeaderComponent={
@@ -136,7 +136,7 @@ export default function Comment({ route }) {
           </View>
         </>
       }
-    ></KeyboardAwareFlatList>
+    ></FlatList>
   );
 }
 
