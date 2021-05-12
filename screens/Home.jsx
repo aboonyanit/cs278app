@@ -36,7 +36,6 @@ export default function Home({ navigation }) {
     const profilePicture = friendsPic[item.uid];
     return (
       <View
-        // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
         <View
@@ -92,6 +91,20 @@ export default function Home({ navigation }) {
           {item.likes == null && <Text> {item.likes} 0 likes </Text>}
           {item.likes != null && <Text> {item.likes.length} likes </Text>}
         </View>
+        <View>
+            {item.comments.length != 1 && (
+              <Text onPress={() => navigation.navigate("Comment", item)}>
+                {" "}
+                {item.comments.length} comments{" "}
+              </Text>
+            )}
+            {item.comments.length == 1 && (
+              <Text onPress={() => navigation.navigate("Comment", item)}>
+                {" "}
+                {item.comments.length} comment{" "}
+              </Text>
+            )}
+          </View>
         <View
           style={{
             paddingTop: 10,
@@ -99,30 +112,30 @@ export default function Home({ navigation }) {
             borderBottomWidth: 1,
           }}
         />
-        {item.likes != null && item.likes.includes(myUid) && (
+        <View style={styles.reactionBar}>
           <TouchableOpacity onPress={() => onUserLike(item)}>
-            <View>
+            <View style={styles.iconView}>
               <MaterialCommunityIcons
                 style={styles.icon}
                 name="thumb-up-outline"
-                color={"#00A398"}
+                color={item.likes.includes(myUid) ? "#00A398" : "#808080"}
                 size={25}
               />
             </View>
           </TouchableOpacity>
-        )}
-        {item.likes != null && !item.likes.includes(myUid) && (
-          <TouchableOpacity onPress={() => onUserLike(item)}>
-            <View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Comment", item)}
+          >
+            <View style={styles.iconView}>
               <MaterialCommunityIcons
                 style={styles.icon}
-                name="thumb-up-outline"
+                name="comment-text-outline"
                 color={"#808080"}
                 size={25}
               />
             </View>
           </TouchableOpacity>
-        )}
+        </View>
       </View>
     );
   };
@@ -148,31 +161,39 @@ export default function Home({ navigation }) {
 
   const loadFeedPosts = async () => {
     setIsLoading(true);
-    const feedPosts = await parseTripsForFeed();
+    const feedPosts = await parsePostsForFeed();
     setPostItems(feedPosts);
     setIsLoading(false);
   };
 
-  const parseTripsForFeed = async () => {
-    const parsedPosts = [];
-    const followedUserIds = await fetchMyFollowing();
-    const postsFromDatabase = await fetchUsersPosts(followedUserIds);
-    const userIdToNameMap = await fetchUsersNames(followedUserIds);
-    const likeUserDict = {};
-    for (let postBatch of postsFromDatabase) {
-      postBatch.forEach((post) => {
-        const postData = post.data();
-        const usersId = postData["uid"];
-        postData["usersName"] = userIdToNameMap[usersId][0];
-        postData["email"] = userIdToNameMap[usersId][1];
-        postData["id"] = post.id;
-        likeUserDict[post.id] = postData.likes;
-        parsedPosts.push(postData);
-      });
-    }
-    setLikesUsers(likeUserDict);
-    return parsedPosts;
-  };
+    const parsePostsForFeed = async () => {
+      const parsedPosts = [];
+      const followedUserIds = await fetchMyFollowing();
+      const postsFromDatabase = await fetchUsersPosts(followedUserIds);
+      const userIdToNameMap = await fetchUsersNames(followedUserIds);
+      for (let postBatch of postsFromDatabase) {
+        for (const post of postBatch.docs) {
+          const postData = post.data();
+          const usersId = postData["uid"];
+          postData["usersName"] = userIdToNameMap[usersId];
+          postData["id"] = post.id;
+          const commentsArray = [];
+          await db
+            .collection("comments")
+            .where("postId", "==", post.id)
+            .orderBy("time", "asc")
+            .get()
+            .then((comments) => {
+              comments.forEach((comment) => {
+                commentsArray.push(comment.data());
+              });
+            });
+            postData["comments"] = commentsArray;
+            parsedPosts.push(postData);
+        }
+      }
+      return parsedPosts;
+    };
 
   const fetchMyFollowing = async () => {
     const myUid = firebase.auth().currentUser.uid;
@@ -251,7 +272,7 @@ export default function Home({ navigation }) {
     return (
       <Text style={styles.noTripText}>
         <Text>Your feed is currently empty!{"\n"}</Text>
-        <Text>Follow more friends to see their trips here</Text>
+        <Text>Follow more friends to see their posts here</Text>
       </Text>
     );
   };
@@ -346,6 +367,10 @@ const styles = StyleSheet.create({
     height: Dimensions.get("window").height * 0.4,
     paddingLeft: 10,
     paddingTop: 15,
+  },
+  reactionBar: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   noTripText: {
     paddingTop: Dimensions.get("window").height * 0.3,

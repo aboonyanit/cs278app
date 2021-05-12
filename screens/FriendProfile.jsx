@@ -41,14 +41,13 @@ export default function FriendProfile({ navigation, route }) {
     const uid = firebase.auth().currentUser.uid;
     const usersRef = firebase.firestore().collection("users");
     usersRef.doc(uid).onSnapshot((userDoc) => {
-      console.log("userDoc.data()", userDoc.data());
       if (userDoc.data()["following"].includes(item.uid)) {
         setIsFollowing(true);
-        postsFromDatabase.forEach((trip) => {
-          const tripData = trip.data();
-          if (tripData.uid == item.uid) {
-            tripData["id"] = trip.id;
-            parsedPosts.push(tripData);
+        postsFromDatabase.forEach((post) => {
+          const postData = post.data();
+          if (postData.uid == item.uid) {
+            postData["id"] = post.id;
+            parsedPosts.push(postData);
           }
         });
       } else if (userDoc.data()["followingRequests"].includes(item.uid)) {
@@ -56,6 +55,7 @@ export default function FriendProfile({ navigation, route }) {
       }
       if (parsedPosts.length != pastPosts.length) {
         // Could potentially add more rigorous check than length
+        console.log("parsedPosts", parsedPosts);
         setPastPosts(parsedPosts);
       }
     });
@@ -63,9 +63,9 @@ export default function FriendProfile({ navigation, route }) {
 
   const loadPastPosts = async () => {
     setLoading(true);
-    const collRef = db.collection("trips");
-    const tripsFromDatabase = await collRef.orderBy("time", "desc").get();
-    parsePostsFromDatabase(tripsFromDatabase);
+    const collRef = db.collection("posts");
+    const postsFromDatabase = await collRef.orderBy("time", "desc").get();
+    parsePostsFromDatabase(postsFromDatabase);
     setLoading(false);
   };
 
@@ -138,9 +138,9 @@ export default function FriendProfile({ navigation, route }) {
   const onUserLike = async (item) => {
     if (item.likes != null && item.uid != myUid) {
       // Check to make sure it's not your own post
-      const tripRef = await db.collection("posts").doc(item.id);
+      const postRef = await db.collection("posts").doc(item.id);
       if (item.likes.includes(myUid)) {
-        tripRef.update({
+        postRef.update({
           likes: firebase.firestore.FieldValue.arrayRemove(myUid),
         });
         const index = item.likes.indexOf(myUid);
@@ -149,7 +149,7 @@ export default function FriendProfile({ navigation, route }) {
         }
       } else {
         item.likes.push(myUid);
-        tripRef.update({
+        postRef.update({
           likes: firebase.firestore.FieldValue.arrayUnion(myUid),
         });
       }
@@ -210,7 +210,7 @@ export default function FriendProfile({ navigation, route }) {
 
   const noTripsComponent = () => {
     return (
-      <Text style={styles.noTripText}>No trips to display!</Text>
+      <Text style={styles.noTripText}>No posts to display!</Text>
     );
   };
 
@@ -254,7 +254,7 @@ export default function FriendProfile({ navigation, route }) {
           </TouchableOpacity>
         )}
       </View>
-      <Text style={styles.header}>Past Trips</Text>
+      <Text style={styles.header}>Past Posts</Text>
       {loading ? (
         <ActivityIndicator style={styles.activityIndicator} size={"large"} />
       ) : isFollowing ? (
@@ -267,7 +267,7 @@ export default function FriendProfile({ navigation, route }) {
         <View style={styles.private}>
           <Text style={styles.privateLargeText}>This Account is Private</Text>
           <Text style={styles.privateText}>
-            Follow this account to see their trips.
+            Follow this account to see their posts.
           </Text>
         </View>
       )}
@@ -291,8 +291,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   icon: {
-    marginRight: 8,
-    marginTop: 15,
+    alignSelf: "center",
+    marginVertical: 10,
   },
   name: {
     fontSize: 35,

@@ -17,6 +17,7 @@ import Settings from "./screens/Settings";
 import Post from "./screens/Post";
 import Follow from "./screens/Follow";
 import Notifications from "./screens/Notifications";
+import Comment from "./screens/Comment";
 
 import { MenuProvider } from "react-native-popup-menu";
 import FriendProfile from "./screens/FriendProfile";
@@ -161,6 +162,7 @@ const App = () => {
             <Stack.Screen name="Settings" component={Settings} />
             <Stack.Screen name="Friend Profile" component={FriendProfile} />
             <Stack.Screen name="Follow" component={Follow} />
+            <Stack.Screen name="Comments" component={Comment} />
           </Stack.Navigator>
         ) : (
           <Stack.Navigator>
