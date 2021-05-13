@@ -4,7 +4,9 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  Image,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -33,6 +35,8 @@ export default function FriendProfile({ navigation, route }) {
   const [buttonText, setButtonText] = useState("Follow");
   const [likesUsers, setLikesUsers] = useState({});
   const [isFollowingRequested, setIsFollowingRequested] = useState(false);
+  const [profilePicture, setProfilePicture] = useState(null);
+
   const myUid = firebase.auth().currentUser.uid;
 
   const parsePostsFromDatabase = (postsFromDatabase) => {
@@ -49,7 +53,10 @@ export default function FriendProfile({ navigation, route }) {
             parsedPosts.push(postData);
           }
         });
-      } else if (userDoc.data()["followingRequests"].includes(item.uid)) {
+      } else if (
+        userDoc.data()["followingRequests"] &&
+        userDoc.data()["followingRequests"].includes(item.uid)
+      ) {
         setIsFollowingRequested(true);
       }
       if (parsedPosts.length != pastPosts.length) {
@@ -74,7 +81,10 @@ export default function FriendProfile({ navigation, route }) {
       const uid = firebase.auth().currentUser.uid;
       const usersRef = firebase.firestore().collection("users");
       usersRef.doc(uid).onSnapshot((userDoc) => {
-        if (userDoc.data()["followingRequests"].includes(item.uid)) {
+        if (
+          userDoc.data()["followingRequests"] &&
+          userDoc.data()["followingRequests"].includes(item.uid)
+        ) {
           setIsFollowingRequested(true);
           setButtonText("Requested");
         }
@@ -89,6 +99,7 @@ export default function FriendProfile({ navigation, route }) {
     usersRef.doc(item.uid).onSnapshot((userDoc) => {
       setFollowers(userDoc.data()["followers"]);
       setFollowing(userDoc.data()["following"]);
+      setProfilePicture(userDoc.data()["profilePicture"]);
     });
   };
 
@@ -160,16 +171,46 @@ export default function FriendProfile({ navigation, route }) {
 
   const pastPostComponent = ({ item }) => {
     return (
-      <TouchableOpacity
+      <View
         // onPress={() => navigation.navigate("Past Trip", item)}
         style={styles.itemContainer}
       >
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {profilePicture ? (
+            <Image
+              style={styles.smallProfilePic}
+              source={{ uri: profilePicture }}
+            />
+          ) : (
+            <MaterialCommunityIcons
+              name="account-circle"
+              color={"#808080"}
+              size={50}
+            />
+          )}
+          <Text>By: {firebase.auth().currentUser.displayName}</Text>
+        </View>
         <Text style={styles.time}>
           {moment(item.time, moment.ISO_8601).format("LLL")}
         </Text>
         <View style={styles.cardHeader}>
           <Text style={styles.postText}>{item.post}</Text>
         </View>
+        <ScrollView horizontal={true}>
+          {item.images &&
+            item.images.map((photo, i) => (
+              <Image
+                key={i}
+                source={{ uri: photo }}
+                style={{
+                  width: Dimensions.get("window").height * 0.23,
+                  height: Dimensions.get("window").height * 0.23,
+                  margin: 5,
+                  padding: 5,
+                }}
+              />
+            ))}
+        </ScrollView>
         <View>
           {item.likes == null && <Text> {item.likes} 0 likes </Text>}
           {item.likes != null && <Text> {item.likes.length} likes </Text>}
@@ -205,7 +246,7 @@ export default function FriendProfile({ navigation, route }) {
             </View>
           </TouchableOpacity>
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -229,7 +270,19 @@ export default function FriendProfile({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.name}>{item.displayName}</Text>
+      <View style={{ flexDirection: "row" }}>
+        {profilePicture ? (
+          <Image style={styles.profilePic} source={{ uri: profilePicture }} />
+        ) : (
+          <MaterialCommunityIcons
+            style={styles.profileIcon}
+            name="account-circle"
+            color={"#808080"}
+            size={90}
+          />
+        )}
+        <Text style={styles.name}>{item.displayName}</Text>
+      </View>
       <View style={styles.row}>
         <TouchableOpacity onPress={onPressFollowers}>
           <Text style={styles.follow}>{followers.length} Followers</Text>
@@ -363,5 +416,18 @@ const styles = StyleSheet.create({
   postText: {
     fontSize: 20,
     fontWeight: "bold",
+  },
+  profilePic: {
+    width: Dimensions.get("window").height * 0.1,
+    height: Dimensions.get("window").height * 0.1,
+    margin: 10,
+    borderRadius: 50,
+  },
+  smallProfilePic: {
+    width: Dimensions.get("window").height * 0.058,
+    height: Dimensions.get("window").height * 0.058,
+    borderRadius: 50,
+    margin: 5,
+    marginLeft: 0,
   },
 });

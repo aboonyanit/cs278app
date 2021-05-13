@@ -43,9 +43,7 @@ export default function Profile({ navigation }) {
   const pastPostComponent = ({ item }) => {
     const myUid = firebase.auth().currentUser.uid;
     return (
-      <View
-        style={styles.itemContainer}
-      >
+      <View style={styles.itemContainer}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           {profilePicture ? (
             <Image
@@ -82,32 +80,28 @@ export default function Profile({ navigation }) {
               />
             ))}
         </ScrollView>
-       <View style={styles.row}>
+        <View style={styles.row}>
           <View>
-            {item.likes.length != 1 && (
+            {item?.likes?.length != 1 && (
               <Text onPress={() => navigation.navigate("Likes", item.likes)}>
-                {" "}
-                {item.likes.length} likes{" "}
+                {item?.likes?.length} likes
               </Text>
             )}
-            {item.likes.length == 1 && (
+            {item?.likes?.length == 1 && (
               <Text onPress={() => navigation.navigate("Likes", item.likes)}>
-                {" "}
-                {item.likes.length} like{" "}
+                {item?.likes?.length} like
               </Text>
             )}
           </View>
           <View>
             {item.comments.length != 1 && (
               <Text onPress={() => navigation.navigate("Comment", item)}>
-                {" "}
-                {item.comments.length} comments{" "}
+                {item.comments.length} comments
               </Text>
             )}
             {item.comments.length == 1 && (
               <Text onPress={() => navigation.navigate("Comment", item)}>
-                {" "}
-                {item.comments.length} comment{" "}
+                {item.comments.length} comment
               </Text>
             )}
           </View>
@@ -125,7 +119,7 @@ export default function Profile({ navigation }) {
               <MaterialCommunityIcons
                 style={styles.icon}
                 name="thumb-up-outline"
-                color={item.likes.includes(myUid) ? "#00A398" : "#808080"}
+                color={item?.likes?.includes(myUid) ? "#00A398" : "#808080"}
                 size={25}
               />
             </View>
@@ -167,7 +161,7 @@ export default function Profile({ navigation }) {
         postData["comments"] = commentsArray;
         parsedPosts.push(postData);
       }
-    };
+    }
     return parsedPosts;
   };
 
